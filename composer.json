@@ -1,6 +1,6 @@
 {
   "name": "ictpldd/my-chart-widget",
-  "description": "A lightweight PHP Chart.js widget for any framework",
+  "description": "Chart.js-based Yii2 widget with multi-chart support",
   "type": "library",
   "license": "MIT",
   "autoload": {
@@ -9,6 +9,9 @@
     }
   },
   "require": {
-    "php": ">=8.0"
-  }
+    "php": ">=7.4",
+    "yiisoft/yii2": "^2.0"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }

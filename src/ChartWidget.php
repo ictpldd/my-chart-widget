@@ -2,7 +2,12 @@
 
 namespace IctplDd\ChartWidget;
 
-class ChartWidget
+use yii\base\Widget; // important!
+use yii\helpers\Html;
+use yii\helpers\Json;
+use yii\web\JsExpression;
+
+class ChartWidget extends Widget
 {
     public $elementId = 'chart';
     public $labels = [];
