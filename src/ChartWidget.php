@@ -1,14 +1,15 @@
 <?php
 
-namespace IctplDd\ChartWidget;
+namespace IctplDd\MyChartWidget;
 
 use yii\base\Widget;
 use yii\helpers\Html;
 use yii\helpers\Json;
 use yii\web\JsExpression;
+use Yii;
 
-class ChartWidget extends Widget
-{
+class ChartWidgetTest extends Widget {
+
     public $elementId = 'chart';
     public $labels = [];
     public $datasets = [];
@@ -18,70 +19,91 @@ class ChartWidget extends Widget
     public $height = '400px';
     public $darkMode = false;
 
-    public function run(): string
-    {
+    public function init() {
+        parent::init();
+
         if ($this->elementId === 'chart') {
             $this->elementId .= '_' . uniqid();
         }
 
         $this->datasets = $this->assignColors($this->datasets);
-        $widthPx = $this->parsePixelValue($this->width, 800);
-        $heightPx = $this->parsePixelValue($this->height, 400);
+    }
+public function run()
+{
+    $this->registerAssets();
 
-        $canvas = "<canvas id=\"{$this->elementId}\" width=\"{$widthPx}\" height=\"{$heightPx}\" style=\"width: {$widthPx}px; height: {$heightPx}px; display:block;\"></canvas>";
+    $widthPx = $this->parsePixelValue($this->width, 800);
+    $heightPx = $this->parsePixelValue($this->height, 400);
 
-        $chartData = [
-            'labels' => $this->labels,
-            'datasets' => $this->datasets,
-        ];
+    $canvas = Html::tag('canvas', '', [
+        'id' => $this->elementId,
+        'width' => $widthPx,
+        'height' => $heightPx,
+        'style' => "width: {$widthPx}px; height: {$heightPx}px; display:block;",
+    ]);
 
-        $defaultOptions = [
-            'responsive' => false,
-            'maintainAspectRatio' => false,
-            'scales' => $this->resolveScales(),
-            'plugins' => [
-                'legend' => ['display' => true],
-                'tooltip' => ['enabled' => true],
-            ],
-        ];
+    $chartData = [
+        'labels' => $this->labels,
+        'datasets' => $this->datasets,
+    ];
 
-        if (in_array($this->type, ['pie', 'doughnut', 'polarArea'])) {
-            unset($defaultOptions['scales']);
-        }
+    $defaultOptions = [
+        'responsive' => false,
+        'maintainAspectRatio' => false,
+        'scales' => $this->resolveScales(),
+        'plugins' => [
+            'legend' => ['display' => true],
+            'tooltip' => ['enabled' => true],
+        ],
+    ];
 
-        if ($this->darkMode) {
-            $defaultOptions['plugins']['legend']['labels'] = ['color' => '#fff'];
-            foreach (['x', 'y', 'r'] as $axis) {
-                if (isset($defaultOptions['scales'][$axis])) {
-                    $defaultOptions['scales'][$axis]['ticks']['color'] = '#fff';
-                }
-            }
-        }
-
-        if ($this->type === 'horizontalBar') {
-            $defaultOptions['indexAxis'] = 'y';
-        }
-
-        $chartOptions = array_merge_recursive($defaultOptions, $this->options);
-
-        $js = <<<JS
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    new Chart(document.getElementById('{$this->elementId}'), {
-        type: '{$this->type}',
-        data: {$this->jsonEncode($chartData)},
-        options: {$this->jsonEncode($chartOptions)}
-    });
-});
-</script>
-JS;
-
-        return $canvas . $js;
+    // Remove scales for pie/doughnut/polarArea charts to prevent errors
+    if (in_array($this->type, ['pie', 'doughnut', 'polarArea'])) {
+        unset($defaultOptions['scales']);
     }
 
-    private function assignColors(array $datasets): array
-    {
+    if ($this->darkMode) {
+        $defaultOptions['plugins']['legend']['labels'] = ['color' => '#fff'];
+        foreach (['x', 'y', 'r'] as $axis) {
+            if (isset($defaultOptions['scales'][$axis])) {
+                $defaultOptions['scales'][$axis]['ticks']['color'] = '#fff';
+            }
+        }
+    }
+
+    // Normalize chart type
+    $chartType = $this->type;
+
+    // Set indexAxis: 'y' for horizontal bar
+    if ($this->type === 'horizontalBar') {
+        $defaultOptions['indexAxis'] = 'y';
+    }
+
+    // Merge user options
+    $chartOptions = array_merge_recursive($defaultOptions, $this->options);
+
+    $js = new JsExpression("
+        new Chart(document.getElementById('{$this->elementId}'), {
+            type: '{$chartType}',
+            data: " . Json::encode($chartData) . ",
+            options: " . Json::encode($chartOptions) . "
+        });
+    ");
+
+    $this->getView()->registerJs($js);
+
+    return $canvas;
+}
+
+
+    protected function registerAssets() {
+        $this->getView()->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js', [
+            'depends' => [\yii\web\JqueryAsset::class],
+            'position' => \yii\web\View::POS_END,
+        ]);
+    }
+
+    private function assignColors($datasets) {
         $defaultColors = [
             'rgba(255, 99, 132, 0.6)',
             'rgba(54, 162, 235, 0.6)',
@@ -102,22 +124,20 @@ JS;
         return $datasets;
     }
 
-    private function resolveScales(): array
-    {
+    private function resolveScales() {
         return match ($this->type) {
             'horizontalBar' => ['x' => ['beginAtZero' => true]],
             'bar', 'line' => ['y' => ['beginAtZero' => true]],
             'radar' => ['r' => ['beginAtZero' => true]],
             'bubble', 'scatter' => [
-                'x' => ['beginAtZero' => true],
-                'y' => ['beginAtZero' => true],
+        'x' => ['beginAtZero' => true],
+        'y' => ['beginAtZero' => true],
             ],
             default => [],
         };
     }
 
-    private function parsePixelValue($value, $fallback = 400): int
-    {
+    protected function parsePixelValue($value, $fallback = 400) {
         if (is_int($value)) {
             return $value;
         }
@@ -132,8 +152,4 @@ JS;
         return $fallback;
     }
 
-    private function jsonEncode(array $data): string
-    {
-        return json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    }
 }
