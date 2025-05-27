@@ -1,0 +1,14 @@
+{
+  "name": "ictpldd/my-chart-widget",
+  "description": "A lightweight PHP Chart.js widget for any framework",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "IctplDd\\ChartWidget\\": "src/"
+    }
+  },
+  "require": {
+    "php": ">=8.0"
+  }
+}
