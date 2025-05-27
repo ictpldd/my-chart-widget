@@ -8,7 +8,7 @@ use yii\helpers\Json;
 use yii\web\JsExpression;
 use Yii;
 
-class ChartWidgetTest extends Widget {
+class ChartWidget extends Widget {
 
     public $elementId = 'chart';
     public $labels = [];
