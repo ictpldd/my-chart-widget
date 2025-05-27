@@ -2,7 +2,7 @@
 
 namespace IctplDd\ChartWidget;
 
-use yii\base\Widget; // important!
+use yii\base\Widget;
 use yii\helpers\Html;
 use yii\helpers\Json;
 use yii\web\JsExpression;
@@ -18,7 +18,7 @@ class ChartWidget extends Widget
     public $height = '400px';
     public $darkMode = false;
 
-    public function render(): string
+    public function run(): string
     {
         if ($this->elementId === 'chart') {
             $this->elementId .= '_' . uniqid();
